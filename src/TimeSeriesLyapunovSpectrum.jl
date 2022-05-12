@@ -33,10 +33,13 @@ function calculate_spectrum(attractor::Dataset, theiler_window::Int; return_conv
         end
     end
     # normalize the exponents
+    lle = lyapunov_from_data(attractor, [250]; w=theiler_window)
+    η = successful_estimations * lle / λ[begin]
+    @info "Scaling factor η = $η"
     if return_convergence
-        return res
+        return η .* res
     end
-    return λ / successful_estimations
+    return η .* λ
 end
 
 end #module

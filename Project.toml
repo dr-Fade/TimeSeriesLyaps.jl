@@ -1,0 +1,14 @@
+name = "TimeSeriesLyapunovSpectrum"
+uuid = "889407a3-a2c5-4443-9bab-795e8d24fa9a"
+authors = ["Eugene Koshel <eugenefade@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+ChaosTools = "608a59af-f2a3-5ad4-90b4-758bdf3122a7"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+DynamicalSystems = "61744808-ddfa-5f27-97ff-6e42cc95d634"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Smoothing = "cf09d348-ed9f-4043-bc55-1768af2a262b"

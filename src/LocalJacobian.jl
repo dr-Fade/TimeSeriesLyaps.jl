@@ -7,7 +7,8 @@ function local_jacobian(t::Int64, attractor::Dataset, tree::KDTree, theiler_wind
     _, m = size(attractor)
     # find 2*m nearest neighbors and add the current point to the pool so that
     # we will have 2*m+1 points to work with
-    neighbors = [t; neighborhood(attractor[t], tree, FixedMassNeighborhood(2*m), t, theiler_window)]
+    indxs, = knn(tree, attractor[t], 2*m, false, i -> abs(i-t) < theiler_window)
+    neighbors = [t; indxs]
     # matrix of neighbors (X) and their successors (Y)
     X = attractor[neighbors[1],:]
     Y = attractor[neighbors[1]+1,:]
