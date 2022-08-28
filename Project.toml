@@ -1,4 +1,4 @@
-name = "TimeSeriesLyapunovSpectrum"
+name = "TimeSeriesLyaps"
 uuid = "889407a3-a2c5-4443-9bab-795e8d24fa9a"
 authors = ["Eugene Koshel <eugenefade@gmail.com>"]
 version = "0.1.0"

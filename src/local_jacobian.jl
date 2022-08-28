@@ -1,5 +1,3 @@
-module LocalJacobian
-
 using DynamicalSystems, DifferentialEquations, ChaosTools, LinearAlgebra, NearestNeighbors
 
 function local_jacobian(t::Int64, attractor::Dataset, tree::KDTree, theiler_window::Int64)
@@ -25,5 +23,3 @@ function local_jacobian(t::Int64, attractor::Dataset, tree::KDTree, theiler_wind
     end
     return J
 end
-
-end # module

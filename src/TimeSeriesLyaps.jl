@@ -1,9 +1,14 @@
-module TimeSeriesLyapunovSpectrum
+module TimeSeriesLyaps
 
 using DynamicalSystems, LinearAlgebra, ChaosTools
-include("./LocalJacobian.jl")
+include("./local_jacobian.jl")
 
-function calculate_spectrum(attractor::Dataset, theiler_window::Int; return_convergence = true)
+export calculate_spectrum
+
+"""
+Estimate a spectrum of Lyapunov exponents for the time series using a QR-based algorithm with numerical local Jacobian estimation.
+"""
+function calculate_spectrum(attractor::Dataset, theiler_window::Int; ks=[100], return_convergence = false, normalize_spectrum=true)
     # total number of points and a dimension of the problem
     N, m = size(attractor)
     # k-d tree for quick search for neighboring points
@@ -13,33 +18,38 @@ function calculate_spectrum(attractor::Dataset, theiler_window::Int; return_conv
     # initial values for the exponents are zeros
     λ = zeros(m)
     res = zeros(1, m)
-    successful_estimations = 0
     # initial value the orthogonal deviation vectors
     Y = I(m)
     for t = 1 : N - 1
         # calculate the local expansion rate
-        J = LocalJacobian.local_jacobian(t, attractor, kd_tree, theiler_window)
+        J = local_jacobian(t, attractor, kd_tree, theiler_window)
         # apply the local jacobian by the tangent vectors and reorthogonalize them
         Q, R = LinearAlgebra.qr(J*Y)
         # take the logarithms of the new tangent vectors' norms and accumulate their values
         for i in 1:m
             λ[i] += R[i, i] |> abs |> log
         end
-        successful_estimations += 1
         # initialize the tangent vectors set with the new vectors of unit length
         Y = Q
         if return_convergence
-            res = [res; λ' / successful_estimations]
+            res = [res; λ' / t]
         end
     end
-    # normalize the exponents
-    lle = lyapunov_from_data(attractor, [250]; w=theiler_window)
-    η = successful_estimations * lle / λ[begin]
+    λ = λ / (N-1)
+    @info "Raw estimates: Λ = $λ"
+    η = if normalize_spectrum
+            lyapunov_from_data(attractor, ks; w=theiler_window)[begin] / λ[begin]
+        else
+            1
+        end
     @info "Scaling factor η = $η"
-    if return_convergence
-        return η .* res
+    if η * λ[begin] < 0
+        error("Failed to estimate the Largest Lyapunov Exponent correctly! Please, provide different ks argument.")
     end
-    return η .* λ
+    if return_convergence
+        return  η * res
+    end
+    return η * λ
 end
 
 end #module

@@ -1,5 +1,5 @@
 using DynamicalSystems, DifferentialEquations, ChaosTools, LinearAlgebra, DelimitedFiles, Smoothing, Plots
-include("TimeSeriesLyapunovSpectrum.jl")
+include("TimeSeriesLyaps.jl")
 
 function lorenz_real_lyaps() 
     T = 25
@@ -43,7 +43,7 @@ function lorenz_demo()
     dt = 0.01
     lorenz = DynamicalSystems.Systems.lorenz([12.5, 2.5, 1.5]; σ = 10.0, ρ = 28.0, β = 8/3)
     embedded = DynamicalSystems.trajectory(lorenz, T; dt=dt)[1000:end,:]
-    return TimeSeriesLyapunovSpectrum.calculate_spectrum(embedded, 500)
+    return TimeSeriesLyaps.calculate_spectrum(embedded, 500; ks=[200], normalize_spectrum = true, return_convergence = true)
 end
 
 function embedded_lorenz_demo()
@@ -51,7 +51,7 @@ function embedded_lorenz_demo()
     dt = 0.01
     lorenz = DynamicalSystems.Systems.lorenz([12.5, 2.5, 1.5]; σ = 10.0, ρ = 28.0, β = 8/3)
     embedded = embed(vec(DynamicalSystems.trajectory(lorenz, T; dt=dt)[1000:end,1]), 3, 14)
-    return TimeSeriesLyapunovSpectrum.calculate_spectrum(embedded, 500)
+    return TimeSeriesLyaps.calculate_spectrum(embedded, 500)
 end
 
 function roessler_demo()
@@ -59,7 +59,7 @@ function roessler_demo()
     dt = 0.01
     roessler = DynamicalSystems.Systems.roessler([.1, .1, .1]; a = 0.15, b = 0.2, c = 10)
     embedded = DynamicalSystems.trajectory(roessler, T; dt=dt)[500:end,:]
-    return TimeSeriesLyapunovSpectrum.calculate_spectrum(embedded, 500)
+    return TimeSeriesLyaps.calculate_spectrum(embedded, 500)
 end
 
 function roessler_real_lyaps()
@@ -104,7 +104,7 @@ function logistic_demo()
     for r in 1 : 0.001 : 4
         logistic = DynamicalSystems.Systems.logistic(0.5; r = r)
         trajectory = DynamicalSystems.trajectory(logistic, 100)[2:end]
-        new_lyap = TimeSeriesLyapunovSpectrum.calculate_spectrum(Dataset(trajectory), 1; return_convergence = false)
+        new_lyap = TimeSeriesLyaps.calculate_spectrum(Dataset(trajectory), 1; return_convergence = false)
         res = [res; new_lyap]
     end
     return res
@@ -132,7 +132,7 @@ function hyperchaos_roessler_demo()
     τ = estimate_delay(data, "mi_min")
     D = estimate_dimension(data, τ, 1:10) |> x -> findfirst(y -> y >= 0.95, x)
     embedded = embed(data, D, τ)
-    return TimeSeriesLyapunovSpectrum.calculate_spectrum(embedded, 500)
+    return TimeSeriesLyaps.calculate_spectrum(embedded, 500)
 end
 
 function hyperchaos_roessler_demo()
@@ -157,7 +157,7 @@ function hyperchaos_roessler_demo()
     τ = estimate_delay(data, "mi_min")
     D = estimate_dimension(data, τ, 1:10) |> x -> findfirst(y -> y >= 0.95, x)
     embedded = embed(data, D, τ)
-    return TimeSeriesLyapunovSpectrum.calculate_spectrum(embedded, 500)
+    return TimeSeriesLyaps.calculate_spectrum(embedded, 500)
 end
 
 get_data_array(filename::String, point::String) =
@@ -179,7 +179,7 @@ function eeg_demo(filename::String, point::String; smoothing::Int64 = 1)
     indicator = stochastic_indicator(data, τ, 1:10)
     D = indicator |> findmin |> x -> x[end]
     embedded = embed(data, D, τ)
-    return (TimeSeriesLyapunovSpectrum.calculate_spectrum(embedded, 10), indicator)
+    return (TimeSeriesLyaps.calculate_spectrum(embedded, 10), indicator)
 end
 
 function test_all_eeg(data_dir::String, points::Vector{String}; file_extension::String = "")
@@ -206,3 +206,46 @@ function test_all_eeg(data_dir::String, points::Vector{String}; file_extension::
         end
     end
 end
+
+function conservative_4d_demo()
+    A = [
+        0 -3 1 1;
+        3 0 2 0;
+        -1 -2 0 4;
+        -1 0 -4 0;
+    ]
+    g = (f, k) -> begin
+        x, y, z, u = f
+        [
+            x * abs(x) + k[1]*x
+            y * abs(y) + k[2]*y
+            z * abs(z) + k[3]*z
+            u * abs(u) + k[4]*u
+        ]
+    end
+    function ode(du,u,p,t)
+        du .= A * g(u, p)
+    end
+    tspan = (0.00,10.0)
+    map(
+        k -> "k = $k:\n" * "$(map(
+            u0 -> "\tf₀ = $u0: λ = $(lyapunovspectrum(
+                ODEProblem(ode, u0, tspan, k) |> ContinuousDynamicalSystem, 10000
+            ) |> λ -> map(x -> round(x; digits = 2), λ))\n",
+            [
+                [0.1, 0.1, 0.1, 0.1],
+                [-0.1, 0.1, 0.1, 0.1],
+                [-0.1, 0.1, -0.1, 0.1],
+                [-0.1, -0.1, -0.1, 0.1],
+            ]
+        ) |> s -> reduce(*, s))",
+        [
+            [1, 1, 1, 1],
+            [-1, 1, 1, 1],
+            [-1, 1, -1, 1],
+            [-1, -1, -1, 1],
+        ]
+    ) |> s -> reduce(*, s)
+end
+
+spectrum = lorenz_demo()
