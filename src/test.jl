@@ -3,12 +3,12 @@ include("TimeSeriesLyaps.jl")
 
 function lorenz_real_lyaps() 
     T = 25
-    dt = 0.01
+    Δt = 0.01
     σ = 10.0
     ρ = 28.0
     β = 8/3
     lorenz = DynamicalSystems.Systems.lorenz([12.5, 2.5, 1.5]; σ = σ, ρ = ρ, β = β)
-    trajectory = DynamicalSystems.trajectory(lorenz, T; dt=dt)[1000:end,:]
+    trajectory = DynamicalSystems.trajectory(lorenz, T; Δt=Δt)[1000:end,:]
     N, m = size(trajectory)
     # initial values for the exponents are zeros
     λ = zeros(m)
@@ -22,7 +22,7 @@ function lorenz_real_lyaps()
             (-σ)        σ       0;
             (ρ-x[3])    (-1)    (-x[1]);
             x[2]        x[1]    (-β)
-        ] * dt
+        ] * Δt
         # apply the local jacobian by the tangent vectors and reorthogonalize them
         Q, R = LinearAlgebra.qr(J(trajectory[t])*Y)
         # take the logarithms of the new tangent vectors' norms and accumulate their values
@@ -35,41 +35,41 @@ function lorenz_real_lyaps()
         res = [res; λ' / successful_estimations]
     end
     # normalize the exponents
-    return (res / dt)
+    return (res / Δt)
 end
 
 function lorenz_demo()
     T = 25
-    dt = 0.01
+    Δt = 0.01
     lorenz = DynamicalSystems.Systems.lorenz([12.5, 2.5, 1.5]; σ = 10.0, ρ = 28.0, β = 8/3)
-    embedded = DynamicalSystems.trajectory(lorenz, T; dt=dt)[1000:end,:]
+    embedded = DynamicalSystems.trajectory(lorenz, T; Δt=Δt)[1][1000:end,:]
     return TimeSeriesLyaps.calculate_spectrum(embedded, 500; ks=[200], normalize_spectrum = true, return_convergence = true)
 end
 
 function embedded_lorenz_demo()
     T = 25
-    dt = 0.01
+    Δt = 0.01
     lorenz = DynamicalSystems.Systems.lorenz([12.5, 2.5, 1.5]; σ = 10.0, ρ = 28.0, β = 8/3)
-    embedded = embed(vec(DynamicalSystems.trajectory(lorenz, T; dt=dt)[1000:end,1]), 3, 14)
+    embedded = embed(vec(DynamicalSystems.trajectory(lorenz, T; Δt=Δt)[1][1000:end,1]), 3, 14)
     return TimeSeriesLyaps.calculate_spectrum(embedded, 500)
 end
 
 function roessler_demo()
     T = 500
-    dt = 0.01
+    Δt = 0.01
     roessler = DynamicalSystems.Systems.roessler([.1, .1, .1]; a = 0.15, b = 0.2, c = 10)
-    embedded = DynamicalSystems.trajectory(roessler, T; dt=dt)[500:end,:]
+    embedded = DynamicalSystems.trajectory(roessler, T; Δt=Δt)[500:end,:]
     return TimeSeriesLyaps.calculate_spectrum(embedded, 500)
 end
 
 function roessler_real_lyaps()
     T = 500
-    dt = 0.01
+    Δt = 0.01
     a = 0.15
     b = 0.2
     c = 10
     roessler = DynamicalSystems.Systems.roessler([.1, .1, .1]; a = a, b = b, c = c)
-    trajectory = DynamicalSystems.trajectory(roessler, T; dt=dt)[500:end,:]
+    trajectory = DynamicalSystems.trajectory(roessler, T; Δt=Δt)[500:end,:]
     N, m = size(trajectory)
     # initial values for the exponents are zeros
     λ = zeros(m)
@@ -83,7 +83,7 @@ function roessler_real_lyaps()
             0       -1      -1;
             1       a       0;
             x[3]    0    (x[1]-c)
-        ] * dt
+        ] * Δt
         # apply the local jacobian by the tangent vectors and reorthogonalize them
         Q, R = LinearAlgebra.qr(J(trajectory[t])*Y)
         # take the logarithms of the new tangent vectors' norms and accumulate their values
@@ -96,7 +96,7 @@ function roessler_real_lyaps()
         res = [res; λ' / successful_estimations]
     end
     # normalize the exponents
-    return (res / dt)
+    return (res / Δt)
 end
 
 function logistic_demo()
@@ -247,5 +247,3 @@ function conservative_4d_demo()
         ]
     ) |> s -> reduce(*, s)
 end
-
-spectrum = lorenz_demo()

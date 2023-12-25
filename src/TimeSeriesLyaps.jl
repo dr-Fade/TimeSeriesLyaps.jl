@@ -36,16 +36,15 @@ function calculate_spectrum(attractor::Dataset, theiler_window::Int; ks=[100], r
         end
     end
     λ = λ / (N-1)
-    @info "Raw estimates: Λ = $λ"
     η = if normalize_spectrum
-            lyapunov_from_data(attractor, ks; w=theiler_window)[begin] / λ[begin]
+            _η = lyapunov_from_data(attractor, ks; w=theiler_window)[begin] / λ[begin]
+            if _η * λ[begin] < 0
+                error("Failed to estimate the Largest Lyapunov Exponent correctly! Please, provide different ks argument.")
+            end
+            _η
         else
             1
         end
-    @info "Scaling factor η = $η"
-    if η * λ[begin] < 0
-        error("Failed to estimate the Largest Lyapunov Exponent correctly! Please, provide different ks argument.")
-    end
     if return_convergence
         return  η * res
     end
